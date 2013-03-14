@@ -6,7 +6,7 @@
 #include <stdlib.h>
 
 cv::Mat image;
-int thresh = 0;
+int thresh = 1;
 int max_thresh = 100;
 bool useDet = true;
 int gauKsize = 11;
@@ -17,8 +17,8 @@ void filterHessian( int, void* );
 
 int main( int argc, char** argv )
 {
-  if( argc != 4 ) {
-    std::cerr << "Usage: " << argv[0] << " <InputImage> <method> <OutputFolder>" << std::endl;
+  if( argc != 3 ) {
+    std::cerr << "Usage: " << argv[0] << " <InputImage> <method>" << std::endl;
     return EXIT_FAILURE;
   }
 
@@ -42,7 +42,6 @@ int main( int argc, char** argv )
 void filterHessian( int, void* )
 {
   cv::Mat dXX, dYY, dXY;
-  std::vector<cv::KeyPoint> keypoints;
 
   cv::Sobel(image, dXX, CV_32F, 2, 0);
   cv::Sobel(image, dYY, CV_32F, 0, 2);
@@ -65,7 +64,7 @@ void filterHessian( int, void* )
       for( int i = 0; i < detH.cols; i++ ) {
         cv::Vec3f pixelHessianResponse = detH.at<cv::Vec3f>(j, i);
 
-        if( (pixelHessianResponse[0]+pixelHessianResponse[1]+pixelHessianResponse[2])/3 >= thresh ) {
+        if( (pixelHessianResponse[0]+pixelHessianResponse[1]+pixelHessianResponse[2])/3 >= (float)thresh ) {
           circle( dst, cv::Point( i, j ), 1, cv::Scalar(0, 0, 255), 2, 8, 0 );
         }
       }
@@ -87,7 +86,7 @@ void filterHessian( int, void* )
         float ratio = ((abs(eigenvalues[0]) > abs(eigenvalues[1])) ?
                        eigenvalues[0] / eigenvalues[1] : eigenvalues[1] / eigenvalues[0]);
       
-        if(ratio > 0.0f && ratio < thresh) {
+        if(ratio > 0.0f && ratio <= (float)thresh) {
           circle( dst, cv::Point( i, j ), 1, cv::Scalar(0, 0, 255), 2, 8, 0 );
         }
       }
