@@ -7,8 +7,8 @@
 
 cv::Mat image;
 int thresh = 5000;
-int max_thresh = 20000;
-int int_ratio = 20;
+int max_thresh = 10000;
+int int_ratio = 2;
 double max_ratio = 40;
 
 int gauKsize = 11;
@@ -42,10 +42,12 @@ int main( int argc, char** argv )
 
 void filterHarris( int, void* )
 {
-  cv::Mat dX, dY, dX2, dY2, dXY, response;
+  cv::Mat dX, dY, dX2, dY2, dXY, response, CrCbImage;
 
-  cv::Sobel(image, dX, CV_32F, 1, 0);
-  cv::Sobel(image, dY, CV_32F, 0, 1);
+  cvtColor(image, CrCbImage, CV_RGB2YCrCb);
+
+  cv::Sobel(CrCbImage, dX, CV_32F, 1, 0);
+  cv::Sobel(CrCbImage, dY, CV_32F, 0, 1);
 
   // Gaussian kernel with ksize = gauKsize and sigma = -1 (autocomputed internally)
   cv::Mat gau = cv::getGaussianKernel(gauKsize, -1, CV_32F);
@@ -69,7 +71,7 @@ void filterHarris( int, void* )
     for( int i = 0; i < response.cols; i++ ) {
       cv::Vec3f pixel = response.at<cv::Vec3f>(j, i);
 
-      if( (pixel[0]+pixel[1]+pixel[2])/3 < -thresh ) {
+      if( (pixel[1]+pixel[2])/2 < -thresh ) {
         circle( dst, cv::Point( i, j ), 1, cv::Scalar(0, 0, 255), 2, 8, 0 );
       }
     }
