@@ -6,8 +6,8 @@
 #include <stdlib.h>
 
 cv::Mat image;
-int thresh = 52;
-int max_thresh = 500;
+int thresh = 65;
+int max_thresh = 150;
 
 int gauKsize = 11;
 
