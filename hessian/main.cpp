@@ -9,7 +9,9 @@ cv::Mat image;
 int thresh = 1;
 int max_thresh = 100;
 bool useDet = true;
+
 int gauKsize = 11;
+int maxGauKsize = 21;
 
 char* source_window = "Source image";
 
@@ -31,6 +33,7 @@ int main( int argc, char** argv )
 
   cv::namedWindow( source_window, CV_WINDOW_AUTOSIZE );
   cv::createTrackbar( "Threshold: ", source_window, &thresh, max_thresh, filterHessian );
+  cv::createTrackbar( "Kernel: ", source_window, &gauKsize, maxGauKsize, filterHessian );
   cv::imshow( source_window, image );
 
   filterHessian(0, 0);
@@ -55,7 +58,7 @@ void filterHessian( int, void* )
   
   cv::Mat dst = image.clone();
   
-  std::cout << thresh << std::endl;
+  std::cout << thresh << " : " << gauKsize << std::endl;
 
   if(useDet) {
     cv::Mat detH = dXX.mul(dYY) - dXY.mul(dXY);

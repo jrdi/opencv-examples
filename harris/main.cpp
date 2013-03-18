@@ -6,9 +6,9 @@
 #include <stdlib.h>
 
 cv::Mat image;
-int thresh = 5000;
+int thresh = 2500;
 int max_thresh = 10000;
-int int_ratio = 2;
+int int_ratio = 4;
 double max_ratio = 40;
 
 int gauKsize = 11;
