@@ -60,8 +60,6 @@ void filterGradient( int, void* )
       cv::Vec3f pixelX = dX.at<cv::Vec3f>(j, i);
       cv::Vec3f pixelY = dY.at<cv::Vec3f>(j, i);
 
-
-
       grad.at<cv::Vec3f>(j, i)[0] = cv::sqrt(cv::pow(pixelX[0], 2) + cv::pow(pixelY[0], 2));
       grad.at<cv::Vec3f>(j, i)[1] = cv::sqrt(cv::pow(pixelX[1], 2) + cv::pow(pixelY[1], 2));
       grad.at<cv::Vec3f>(j, i)[2] = cv::sqrt(cv::pow(pixelX[2], 2) + cv::pow(pixelY[2], 2));

@@ -74,6 +74,8 @@ void filterDoG( int, void* )
     }
   }
 
+  cv::resize(dst, dst, cv::Size(round(700 * dst.cols/dst.rows), 700));
+
   cv::namedWindow( source_window, CV_WINDOW_AUTOSIZE );
   cv::imshow( source_window, dst );
 }
