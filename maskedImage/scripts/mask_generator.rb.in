@@ -1,0 +1,49 @@
+#!/usr/bin/env ruby
+
+STDOUT.sync = true
+
+require 'fileutils'
+require 'date'
+require 'optparse'
+
+options = {}
+OptionParser.new do |opts|
+  opts.banner = "Usage: ./mask_generator.rb [options]"
+
+  opts.on("--reconstructions=PATH", String, "Set reconstructions PATH, e.g. ~/PFC/Data") do |path|
+    options[:reconstructions_path] = "#{path}/*"
+  end
+
+  opts.on("--roi=PATH", String, "Set roi mask file, e.g. /Users/jrdi/XcodeProjects/TextureAlignment/Debug/overlappingMask.png") do |path|
+    options[:roi_file] = path
+  end
+
+  opts.on("--output_dir=PATH", String, "Set output PATH, e.g. /home/jenkins/RecSymLinks") do |path|
+    options[:output_path] = path
+  end
+end.parse!
+
+completed = 0
+p "Computing paths:"
+
+paths = Dir.glob(options[:reconstructions_path])
+paths.each do |path|
+  lateral_file = File.join(path, 'lateral_no_frontal.png')
+  frontal_file = File.join(path, 'frontal.png')
+
+  if File.exists?(lateral_file) && File.exists?(frontal_file)
+    output_path = File.join(options[:output_path], completed.to_s)
+
+    FileUtils.mkdir_p(output_path)
+
+    lateral_masked_file = File.join(output_path, 'lateral_masked.png')
+    frontal_masked_file = File.join(output_path, 'frontal_masked.png')
+
+    `@maskedImageExe@ #{lateral_file} #{options[:roi_file]} #{lateral_masked_file}`
+    `@maskedImageExe@ #{frontal_file} #{options[:roi_file]} #{frontal_masked_file}`
+  end
+  completed += 1
+
+  print "#{completed} of #{paths.size}"
+  print "\r"
+end
