@@ -36,6 +36,9 @@ paths.each do |path|
 
     FileUtils.mkdir_p(output_path)
 
+    FileUtils.cp(lateral_file, File.join(output_path, 'lateral.png'))
+    FileUtils.cp(frontal_file, File.join(output_path, 'frontal.png'))
+
     lateral_masked_file = File.join(output_path, 'lateral_masked.png')
     frontal_masked_file = File.join(output_path, 'frontal_masked.png')
 
