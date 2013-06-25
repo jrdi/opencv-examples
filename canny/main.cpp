@@ -12,7 +12,8 @@ int max_thresh1 = 500;
 int thresh2 = 445;
 int max_thresh2 = 500;
 
-int gauKsize = 11;
+int aperture = 3;
+int max_aperture = 60;
 
 char* source_window = "Source image";
 
@@ -33,6 +34,7 @@ int main( int argc, char** argv )
   cv::namedWindow( source_window, CV_WINDOW_AUTOSIZE );
   cv::createTrackbar( "Threshold 1: ", source_window, &thresh1, max_thresh1, filterCanny );
   cv::createTrackbar( "Threshold 2: ", source_window, &thresh2, max_thresh2, filterCanny );
+  cv::createTrackbar( "Aperture: ", source_window, &aperture, max_aperture, filterCanny );
   cv::imshow( source_window, image );
 
   filterCanny(0, 0);
@@ -46,9 +48,9 @@ void filterCanny( int, void* )
   cv::Mat canny; 
   cv::Mat dst = image.clone();
 
-  cv::Canny(image, canny, thresh1, thresh2, 3, false );
+  cv::Canny(image, canny, thresh1, thresh2, aperture, false );
 
-  std::cout << thresh1 << " : " << thresh2 << std::endl;
+  std::cout << thresh1 << " : " << thresh2 << " : " << aperture << std::endl;
 
   for( int j = 0; j < canny.rows ; j++ ) { 
     for( int i = 0; i < canny.cols; i++ ) {
@@ -59,6 +61,8 @@ void filterCanny( int, void* )
       }
     }
   }
+
+  cv::resize(dst, dst, cv::Size(round(700 * dst.cols/dst.rows), 700));
 
   cv::namedWindow( source_window, CV_WINDOW_AUTOSIZE );
   cv::imshow( source_window, dst );

@@ -19,7 +19,7 @@ int main( int argc, char** argv ) {
   cv::Mat grayImage(image.size(), CV_8U);
   cv::cvtColor( image, grayImage, CV_BGR2GRAY );
   cv::Mat binaryImage(grayImage.size(), grayImage.type());
-  cv::threshold(grayImage, binaryImage, 1, 255, cv::THRESH_BINARY);
+  cv::threshold(grayImage, binaryImage, 10, 255, cv::THRESH_BINARY);
 
   int erosion_size = 4;
   cv::Mat element = getStructuringElement(cv::MORPH_ELLIPSE,

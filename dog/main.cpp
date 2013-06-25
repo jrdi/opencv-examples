@@ -7,12 +7,12 @@
 
 cv::Mat image;
 int thresh = 15;
-int max_thresh = 100;
+int max_thresh = 50;
 
-int intSigmaBig = 48;
+int intSigmaBig = 70;
 int intMaxSigmaBig = 120;
 
-int intSigmaSmall = 36;
+int intSigmaSmall = 60;
 int intMaxSigmaSmall = 120;
 
 char* source_window = "Source image";

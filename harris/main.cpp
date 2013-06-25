@@ -6,8 +6,12 @@
 #include <stdlib.h>
 
 cv::Mat image;
-int thresh = 2500;
-int max_thresh = 10000;
+int thresh1 = 100;
+int max_thresh1 = 10000;
+
+int thresh2 = 5000;
+int max_thresh2 = 10000;
+
 int int_ratio = 4;
 double max_ratio = 40;
 
@@ -30,7 +34,8 @@ int main( int argc, char** argv )
   }
 
   cv::namedWindow( source_window, CV_WINDOW_AUTOSIZE );
-  cv::createTrackbar( "Threshold: ", source_window, &thresh, max_thresh, filterHarris );
+  cv::createTrackbar( "Threshold 1: ", source_window, &thresh1, max_thresh1, filterHarris );
+  cv::createTrackbar( "Threshold 2: ", source_window, &thresh2, max_thresh2, filterHarris );
   cv::createTrackbar( "Ratio: ", source_window, &int_ratio, max_ratio, filterHarris );
   cv::imshow( source_window, image );
 
@@ -65,17 +70,19 @@ void filterHarris( int, void* )
 
   cv::Mat dst = image.clone();
   
-  std::cout << -thresh << " : " << ratio << std::endl;
+  std::cout << -thresh1 << " : " << -thresh2 << " : " << ratio << std::endl;
 
   for( int j = 0; j < response.rows ; j++ ) { 
     for( int i = 0; i < response.cols; i++ ) {
       cv::Vec3f pixel = response.at<cv::Vec3f>(j, i);
 
-      if( (pixel[1]+pixel[2])/2 < -thresh ) {
+      if( pixel[1] < -thresh1 && pixel[2] < -thresh2 ) {
         circle( dst, cv::Point( i, j ), 1, cv::Scalar(0, 0, 255), 2, 8, 0 );
       }
     }
   }
+  
+  cv::resize(dst, dst, cv::Size(round(700 * dst.cols/dst.rows), 700));
 
   cv::namedWindow( source_window, CV_WINDOW_AUTOSIZE );
   cv::imshow( source_window, dst );

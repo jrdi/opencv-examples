@@ -21,7 +21,7 @@ int readMolePoints(const std::string & molePointsFilePath,
 
   while(molePointsFile.good()) {
     getline(molePointsFile, line);
-    std::istringstream buffer(line); int x,y;
+    std::istringstream buffer(line); float x,y;
     buffer >> x; buffer >> y; buffer.clear();
     
     if(molePointsFile.eof()){ break; }
