@@ -2,17 +2,20 @@
 #include "opencv2/imgproc/imgproc.hpp"
 #include "opencv2/features2d/features2d.hpp"
 #include <iostream>
+#include <sstream>
+#include <fstream>
 #include <stdio.h>
 #include <stdlib.h>
 
 cv::Mat lda(cv::Mat & X, std::vector<int> y) {
   int dimensions = X.cols;
-  int labels = 2;
   cv::Mat Sw = cv::Mat::zeros(dimensions, dimensions, CV_32F);
   cv::Mat Sb = cv::Mat::zeros(dimensions, dimensions, CV_32F);
 
   cv::Mat Covar, Mu;
   cv::calcCovarMatrix(X, Covar, Mu, CV_COVAR_NORMAL+CV_COVAR_ROWS, CV_32F);
+
+  std::cout << "Mu: " << Mu << std::endl;
 
   cv::Mat X0, X1;
   for (int i = 0; i < y.size(); ++i)
@@ -31,33 +34,46 @@ cv::Mat lda(cv::Mat & X, std::vector<int> y) {
   cv::calcCovarMatrix(X0, Covar0, Mu0, CV_COVAR_NORMAL+CV_COVAR_ROWS, CV_32F);
   cv::calcCovarMatrix(X1, Covar1, Mu1, CV_COVAR_NORMAL+CV_COVAR_ROWS, CV_32F);
 
+  std::cout << "Bg Mu: " << Mu0 << std::endl;
+  std::cout << "Skin Mu: " << Mu1 << std::endl;
+
   cv::Mat XM0(X0.size(), X0.type()), XM1(X1.size(), X1.type());
   for(int i = 0; i < X0.rows; i++) {
-    XM0.at<float>(i, 0) = X0.at<float>(i, 0) - Mu0.at<float>(0);
-    XM0.at<float>(i, 1) = X0.at<float>(i, 1) - Mu0.at<float>(1);
+    for(int j = 0; j < dimensions; j++) {
+      XM0.at<float>(i, j) = X0.at<float>(i, j) - Mu0.at<float>(j);
+    }
   }
 
   for(int i = 0; i < X1.rows; i++) {
-    XM1.at<float>(i, 0) = X1.at<float>(i, 0) - Mu1.at<float>(0);
-    XM1.at<float>(i, 1) = X1.at<float>(i, 1) - Mu1.at<float>(1);
+    for(int j = 0; j < dimensions; j++) {
+      XM1.at<float>(i, j) = X1.at<float>(i, j) - Mu1.at<float>(j);
+    }
   }
 
   Sw = (XM0.t() * XM0) + (XM1.t() * XM1);
+  std::cout << "Sw: " << Sw << std::endl;
+  
+  cv::Mat M0M(dimensions, 1, CV_32F);
+  for(int j = 0; j < dimensions; j++) {
+    M0M.at<float>(j) = Mu0.at<float>(j) - Mu.at<float>(j);
+  }
 
-  cv::Mat M0M(2, 1, CV_32F);
-  M0M.at<float>(0) = Mu0.at<float>(0) - Mu.at<float>(0);
-  M0M.at<float>(1) = Mu0.at<float>(1) - Mu.at<float>(1);
-
-  cv::Mat M1M(2, 1, CV_32F);
-  M1M.at<float>(0) = Mu1.at<float>(0) - Mu.at<float>(0);
-  M1M.at<float>(1) = Mu1.at<float>(1) - Mu.at<float>(1);
+  cv::Mat M1M(dimensions, 1, CV_32F);
+  for(int j = 0; j < dimensions; j++) {
+    M1M.at<float>(j) = Mu1.at<float>(j) - Mu.at<float>(j);
+  }
 
   Sb = n0 * M0M * M0M.t() + n1 * M1M * M1M.t();
+  std::cout << "Sb: " << Sb << std::endl;
 
-  cv::Mat S = Sw.inv() * Sb;
+  cv::Mat S = Sw.inv(cv::DECOMP_SVD) * Sb;
+  std::cout << "S: " << S << std::endl;
 
-  cv::Mat eigenvalues(1, 2, Sb.type()), eigenvectors(2, 2, Sb.type());
-  eigen(S, eigenvalues, eigenvectors);
+  cv::Mat eigenvalues(1, dimensions, Sb.type()), eigenvectors(dimensions, dimensions, Sb.type());
+  cv::eigen(S, eigenvalues, eigenvectors);
+
+  std::cout << eigenvalues << std::endl;
+  std::cout << eigenvectors << std::endl;
 
   return eigenvectors;
 }
@@ -118,6 +134,15 @@ int main( int argc, char** argv )
       count++;
     }
   }
+
+  std::ofstream ofs;
+  ofs.open( "myFile.txt" );
+
+  for( int i = 0; i < samples.rows; i++) {
+    ofs << samples.at<float>(i, 0) << " " << samples.at<float>(i, 1) << std::endl;
+  }
+
+  ofs.close();
 
   cv::Mat convMat = lda(samples, labels);
 
