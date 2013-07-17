@@ -1,6 +1,10 @@
 #include "opencv2/highgui/highgui.hpp"
 #include "opencv2/imgproc/imgproc.hpp"
 #include "opencv2/features2d/features2d.hpp"
+
+#include "eigen3/Eigen/Eigenvalues"
+#include "opencv2/core/eigen.hpp"
+
 #include <iostream>
 #include <sstream>
 #include <fstream>
@@ -63,21 +67,60 @@ cv::Mat lda(cv::Mat & X, std::vector<int> y) {
   cv::Mat S = Sw.inv(cv::DECOMP_SVD) * Sb;
 
   cv::Mat eigenvalues(1, dimensions, Sb.type()), eigenvectors(dimensions, dimensions, Sb.type());
+  
   cv::eigen(S, eigenvalues, eigenvectors);
 
-  cv::Mat W;
+  // cv::Mat W;
 
-  W.push_back(eigenvectors.row(0));
-  W.push_back(eigenvectors.row(1));
-  W.push_back(eigenvectors.row(2));
+  // W.push_back(eigenvectors.row(0));
+  // W.push_back(eigenvectors.row(1));
+  // W.push_back(eigenvectors.row(2));
+
+  Eigen::MatrixXd A( 6, 6 );
+  cv::cv2eigen(S, A);
+
+  Eigen::EigenSolver<Eigen::MatrixXd> es(A);
+  Eigen::VectorXd eigenval = es.eigenvalues().real();
+  Eigen::MatrixXd eigenvect = es.eigenvectors().real();
+
+  // Sort by ascending eigenvalues:
+  std::vector<std::pair<double, int> > D;
+
+  D.reserve(eigenval.size());
+  for (int i=0;i<eigenval.size();i++) {
+    D.push_back(std::make_pair<double, int>(std::abs(eigenval.coeff(i,0)),i));
+  }
+
+  std::sort(D.rbegin(),D.rend());
+  
+  Eigen::MatrixXd sortedEigs;
+  sortedEigs.resizeLike(eigenvect);
+  for (int i=0;i<eigenval.size();i++) {
+    eigenval.coeffRef(i,0)=D[i].first;
+    sortedEigs.col(i)=eigenvect.col(D[i].second);
+  }
+  eigenvect = sortedEigs;
+
+  Eigen::MatrixXd WEig( 6, 3 );
+
+  WEig.col(0) = eigenvect.col(0);
+  WEig.col(1) = eigenvect.col(1);
+  WEig.col(2) = eigenvect.col(2);
+
+  std::cout << "The eigenvalues of W are:" << std::endl << WEig << std::endl;
+  std::cout << "The matrix of eigenvectors, V, is:" << std::endl << eigenvect << std::endl << std::endl;
+
+  cv::Mat W(3, 6, CV_64F, WEig.transpose().data());
+
+  std::cout << W << std::endl;
 
   return W;
 }
 
 int main( int argc, char** argv )
 {
-  if( argc != 4 ) {
-    std::cerr << "Usage: " << argv[0] << " <InputImage> <bgImage> <skinImage>" << std::endl;
+  if( argc != 3 ) {
+    std::cerr << "Usage: " << argv[0] << " <InputImage> <mask>" << std::endl;
     return EXIT_FAILURE;
   }
 
@@ -85,35 +128,27 @@ int main( int argc, char** argv )
   if(!image.data) {
     return EXIT_FAILURE;
   }
-  cv::Mat bgImage = cv::imread( argv[2], 1 );
-  if(!bgImage.data) {
-    return EXIT_FAILURE;
-  }
-  cv::Mat skinImage = cv::imread( argv[3], 1 );
-  if(!skinImage.data) {
+  cv::Mat mask = cv::imread( argv[2], CV_LOAD_IMAGE_GRAYSCALE );
+  if(!mask.data) {
     return EXIT_FAILURE;
   }
 
-  cv::Mat samples(bgImage.cols*bgImage.rows+skinImage.cols*skinImage.rows, 6, CV_64F);
-  std::vector<int> labels(bgImage.cols*bgImage.rows+skinImage.cols*skinImage.rows);
+  cv::Mat samples(image.rows*image.cols, 6, CV_64F);
+  std::vector<int> labels(image.rows*image.cols);
 
-  cv::Mat bgHSVImage, skinHSVImage;
+  cv::Mat imageHSV;
 
-  cv::cvtColor( bgImage, bgHSVImage, CV_BGR2HSV );
-  cv::cvtColor( skinImage, skinHSVImage, CV_BGR2HSV );
+  cv::cvtColor( image, imageHSV, CV_BGR2HSV );
 
-  bgImage.convertTo(bgImage, CV_64F);
-  skinImage.convertTo(skinImage, CV_64F);
-  bgHSVImage.convertTo(bgHSVImage, CV_64F);
-  skinHSVImage.convertTo(skinHSVImage, CV_64F);
-
+  image.convertTo(image, CV_64F);
+  imageHSV.convertTo(imageHSV, CV_64F);
 
   int count = 0;
 
-  for( int y = 0; y < bgImage.rows ; y++ ) { 
-    for( int x = 0; x < bgImage.cols; x++ ) {
-      cv::Vec3d color = bgImage.at<cv::Vec3d>(y, x);
-      cv::Vec3d colorHSV = bgHSVImage.at<cv::Vec3d>(y, x);
+  for( int y = 0; y < image.rows ; y++ ) { 
+    for( int x = 0; x < image.cols; x++ ) {
+      cv::Vec3d color = image.at<cv::Vec3d>(y, x);
+      cv::Vec3d colorHSV = imageHSV.at<cv::Vec3d>(y, x);
 
       samples.at<double>(count, 0) = color[0];
       samples.at<double>(count, 1) = color[1];
@@ -123,26 +158,11 @@ int main( int argc, char** argv )
       samples.at<double>(count, 4) = colorHSV[1];
       samples.at<double>(count, 5) = colorHSV[2];
 
-      labels[count] = 0;
-
-      count++;
-    }
-  }
-
-  for( int y = 0; y < skinImage.rows ; y++ ) { 
-    for( int x = 0; x < skinImage.cols; x++ ) {
-      cv::Vec3d color = skinImage.at<cv::Vec3d>(y, x);
-      cv::Vec3d colorHSV = skinHSVImage.at<cv::Vec3d>(y, x);
-
-      samples.at<double>(count, 0) = color[0];
-      samples.at<double>(count, 1) = color[1];
-      samples.at<double>(count, 2) = color[2];
-
-      samples.at<double>(count, 3) = colorHSV[0];
-      samples.at<double>(count, 4) = colorHSV[1];
-      samples.at<double>(count, 5) = colorHSV[2];
-
-      labels[count] = 1;
+      if(mask.at<uchar>(y, x) > 120) {
+        labels[count] = 1;
+      } else {
+        labels[count] = 0;
+      }
 
       count++;
     }
@@ -164,12 +184,7 @@ int main( int argc, char** argv )
 
   cv::Mat W = lda(samples, labels);
 
-  cv::Mat imageHSV;
-
-  cv::cvtColor(image, imageHSV, CV_BGR2HSV);
-  image.convertTo(image, CV_64F);
-  imageHSV.convertTo(imageHSV, CV_64F);
-  cv::imwrite("cbcr.jpg", image);
+  cv::imwrite("original.jpg", image);
 
   count = 0;
   for( int y = 0; y < image.rows ; y++ ) { 
@@ -195,7 +210,39 @@ int main( int argc, char** argv )
     }
   }
 
-  cv::imwrite("cbcr2.jpg", image);
+  cv::normalize(image, image, 0, 255, cv::NORM_MINMAX);
+
+  std::vector<cv::Mat> channels;
+  cv::split(image, channels);
+
+  std::ofstream myFile;
+  myFile.open( "img0.csv" );
+  
+  std::stringstream ss;
+  ss << format(channels[0],"csv") << std::endl << std::endl;
+  myFile << ss.str();
+  
+  myFile.close();
+
+  myFile.open( "img1.csv" );
+  
+  ss << format(channels[1],"csv") << std::endl << std::endl;
+  myFile << ss.str();
+  
+  myFile.close();
+
+  myFile.open( "img2.csv" );
+  
+  ss << format(channels[2],"csv") << std::endl << std::endl;
+  myFile << ss.str();
+  
+  myFile.close();
+
+  cv::imwrite("projected0.jpg", channels[0]);
+  cv::imwrite("projected1.jpg", channels[1]);
+  cv::imwrite("projected2.jpg", channels[2]);
+
+  cv::imwrite("projected.jpg", image);
 
   return EXIT_SUCCESS;
 }
