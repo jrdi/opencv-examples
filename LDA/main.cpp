@@ -83,21 +83,19 @@ cv::Mat lda(cv::Mat & X, std::vector<int> y) {
   Eigen::VectorXd eigenval = es.eigenvalues().real();
   Eigen::MatrixXd eigenvect = es.eigenvectors().real();
 
-  // Sort by ascending eigenvalues:
-  std::vector<std::pair<double, int> > D;
+  typedef std::multimap< double, Eigen::VectorXd, std::greater< double > >    EigenSorterType;
+  EigenSorterType D;
 
-  D.reserve(eigenval.size());
   for (int i=0;i<eigenval.size();i++) {
-    D.push_back(std::make_pair<double, int>(std::abs(eigenval.coeff(i,0)),i));
+    D.insert( EigenSorterType::value_type( std::abs(eigenval.coeff(i, 0)), eigenvect.col(i) ) );
   }
-
-  std::sort(D.rbegin(),D.rend());
   
   Eigen::MatrixXd sortedEigs;
   sortedEigs.resizeLike(eigenvect);
-  for (int i=0;i<eigenval.size();i++) {
-    eigenval.coeffRef(i,0)=D[i].first;
-    sortedEigs.col(i)=eigenvect.col(D[i].second);
+  int i = 0;
+  for (EigenSorterType::const_iterator it = D.begin(); it != D.end(); ++it) {
+    sortedEigs.col(i) = it->second;
+    i++;
   }
   eigenvect = sortedEigs;
 

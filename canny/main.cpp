@@ -6,10 +6,10 @@
 #include <stdlib.h>
 
 cv::Mat image;
-int thresh1 = 52;
+int thresh1 = 106;
 int max_thresh1 = 500;
 
-int thresh2 = 445;
+int thresh2 = 140;
 int max_thresh2 = 500;
 
 int aperture = 3;
@@ -46,7 +46,16 @@ int main( int argc, char** argv )
 void filterCanny( int, void* )
 {
   cv::Mat canny; 
-  cv::Mat dst = image.clone();
+  cv::Mat dst;
+
+  cvtColor(image, dst, CV_RGB2YCrCb);
+  std::vector<cv::Mat> splitted;
+  cv::split(dst, splitted);
+  std::vector<cv::Mat> CbCr(2);
+  CbCr[0] = splitted[1];
+  CbCr[1] = splitted[2];
+
+  cv::merge(CbCr, dst);
 
   cv::Canny(image, canny, thresh1, thresh2, aperture, false );
 
@@ -62,9 +71,9 @@ void filterCanny( int, void* )
     }
   }
 
-  cv::resize(dst, dst, cv::Size(round(700 * dst.cols/dst.rows), 700));
+  cv::resize(canny, canny, cv::Size(round(700 * canny.cols/canny.rows), 700));
 
   cv::namedWindow( source_window, CV_WINDOW_AUTOSIZE );
-  cv::imshow( source_window, dst );
+  cv::imshow( source_window, canny );
 }
 

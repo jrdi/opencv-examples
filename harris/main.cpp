@@ -12,7 +12,7 @@ int max_thresh1 = 10000;
 int thresh2 = 5000;
 int max_thresh2 = 10000;
 
-int int_ratio = 4;
+int int_ratio = 9;
 double max_ratio = 40;
 
 int gauKsize = 11;
@@ -77,12 +77,12 @@ void filterHarris( int, void* )
       cv::Vec3f pixel = response.at<cv::Vec3f>(j, i);
 
       if( pixel[1] < -thresh1 && pixel[2] < -thresh2 ) {
-        circle( dst, cv::Point( i, j ), 1, cv::Scalar(0, 0, 255), 2, 8, 0 );
+        circle( dst, cv::Point( i, j ), 1, cv::Scalar(0, 0, 255), 1, 8, 0 );
       }
     }
   }
   
-  cv::resize(dst, dst, cv::Size(round(700 * dst.cols/dst.rows), 700));
+  // cv::resize(dst, dst, cv::Size(round(700 * dst.cols/dst.rows), 700));
 
   cv::namedWindow( source_window, CV_WINDOW_AUTOSIZE );
   cv::imshow( source_window, dst );
